@@ -39,6 +39,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32f4xx_hal.h"
+#include "led_driver.h"
 
 /* USER CODE BEGIN Includes */
 
@@ -94,11 +95,30 @@ int main(void)
   MX_TIM6_Init();
 
   /* USER CODE BEGIN 2 */
+  LED_Init(LED3);
+  LED_Init(LED4);
+  LED_Init(LED5);
+  LED_Init(LED6);
 
+  LED_Off(LED3);
+  LED_Off(LED4);
+  LED_Off(LED5);
+  LED_Off(LED6);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  htim6.Init.Prescaler =  (uint32_t) (SystemCoreClock / 10000) - 1;
+  htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim6.Init.Period = 16000000/2;
+  htim6.Init.ClockDivision =  TIM_CLOCKDIVISION_DIV1;
+  htim6.Channel = HAL_TIM_ACTIVE_CHANNEL_CLEARED;
+  htim6.hdma[0] = NULL;
+  htim6.State = HAL_TIM_STATE_RESET;
+  HAL_TIM_Base_Init(&htim6);
+  HAL_TIM_Base_Start_IT(&htim6);
+
+//  __enable_irq();
   while (1)
   {
   /* USER CODE END WHILE */
