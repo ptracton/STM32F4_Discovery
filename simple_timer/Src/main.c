@@ -64,7 +64,10 @@ static void MX_TIM6_Init(void);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
-
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
+	LED_Toggle(LED3);
+	return;
+}
 /* USER CODE END 0 */
 
 int main(void)
