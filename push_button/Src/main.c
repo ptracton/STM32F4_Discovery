@@ -39,6 +39,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32f4xx_hal.h"
+#include "led_driver.h"
 
 /* USER CODE BEGIN Includes */
 
@@ -61,7 +62,10 @@ static void MX_GPIO_Init(void);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
-
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+	LED_Toggle(LED6);
+}
 /* USER CODE END 0 */
 
 int main(void)
@@ -91,7 +95,15 @@ int main(void)
   MX_GPIO_Init();
 
   /* USER CODE BEGIN 2 */
+  LED_Init(LED3);
+  LED_Init(LED4);
+  LED_Init(LED5);
+  LED_Init(LED6);
 
+  LED_Off(LED3);
+  LED_Off(LED4);
+  LED_Off(LED5);
+  LED_Off(LED6);
   /* USER CODE END 2 */
 
   /* Infinite loop */
