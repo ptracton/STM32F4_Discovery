@@ -46,6 +46,9 @@
 
 /* Private variables ---------------------------------------------------------*/
 UART_HandleTypeDef huart2;
+static uint8_t echo;
+static uint8_t echo_char = 'B';
+static uint32_t timeout;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
@@ -63,14 +66,23 @@ static void MX_USART2_UART_Init(void);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
-
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
+	HAL_StatusTypeDef status;
+	status = HAL_UART_Receive_IT(huart, &echo_char, 1);
+	if (HAL_OK == status) {
+		echo = 1;
+	}
+	return;
+}
 /* USER CODE END 0 */
 
 int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
+	echo = 0;
+	echo_char = 0;
+	timeout = 50000;
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -99,12 +111,18 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+
+  HAL_UART_Receive_IT(&huart2, &echo_char, 1);
   while (1)
   {
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
 
+	  if (echo){
+		  HAL_UART_Transmit_IT(&huart2, &echo_char, 1);
+		  echo = 0;
+	  }
   }
   /* USER CODE END 3 */
 
