@@ -2,9 +2,6 @@
 #n/** Configure pins as #n #t#t #t* Analog #n #t#t #t* Input #n #t#t #t* Output#n #t#t #t* EVENT_OUT#n #t#t #t* EXTI
 #t#t PC3#t ------> I2S2_SD
 #t#t PA4#t ------> I2S3_WS
-#t#t PA5#t ------> SPI1_SCK
-#t#t PA6#t ------> SPI1_MISO
-#t#t PA7#t ------> SPI1_MOSI
 #t#t PB10#t ------> I2S2_CK
 #t#t PC7#t ------> I2S3_MCK
 #t#t PA9#t ------> USB_OTG_FS_VBUS
@@ -13,8 +10,6 @@
 #t#t PA12#t ------> USB_OTG_FS_DP
 #t#t PC10#t ------> I2S3_CK
 #t#t PC12#t ------> I2S3_SD
-#t#t PB6#t ------> I2C1_SCL
-#t#t PB9#t ------> I2C1_SDA
 */
 static void MX_GPIO_Init(void)
 {
@@ -64,13 +59,6 @@ static void MX_GPIO_Init(void)
 #tGPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 #tGPIO_InitStruct.Alternate = GPIO_AF6_SPI3;
 #tHAL_GPIO_Init(I2S3_WS_GPIO_Port, &GPIO_InitStruct);
-#n#t/*Configure GPIO pins : SPI1_SCK_Pin SPI1_MISO_Pin SPI1_MOSI_Pin */
-#tGPIO_InitStruct.Pin = SPI1_SCK_Pin|SPI1_MISO_Pin|SPI1_MOSI_Pin;
-#tGPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-#tGPIO_InitStruct.Pull = GPIO_NOPULL;
-#tGPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-#tGPIO_InitStruct.Alternate = GPIO_AF5_SPI1;
-#tHAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 #n#t/*Configure GPIO pin : BOOT1_Pin */
 #tGPIO_InitStruct.Pin = BOOT1_Pin;
 #tGPIO_InitStruct.Mode = GPIO_MODE_INPUT;
@@ -113,13 +101,6 @@ static void MX_GPIO_Init(void)
 #tGPIO_InitStruct.Mode = GPIO_MODE_INPUT;
 #tGPIO_InitStruct.Pull = GPIO_NOPULL;
 #tHAL_GPIO_Init(OTG_FS_OverCurrent_GPIO_Port, &GPIO_InitStruct);
-#n#t/*Configure GPIO pins : Audio_SCL_Pin Audio_SDA_Pin */
-#tGPIO_InitStruct.Pin = Audio_SCL_Pin|Audio_SDA_Pin;
-#tGPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
-#tGPIO_InitStruct.Pull = GPIO_PULLUP;
-#tGPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-#tGPIO_InitStruct.Alternate = GPIO_AF4_I2C1;
-#tHAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 #n#t/*Configure GPIO pin : MEMS_INT2_Pin */
 #tGPIO_InitStruct.Pin = MEMS_INT2_Pin;
 #tGPIO_InitStruct.Mode = GPIO_MODE_EVT_RISING;
