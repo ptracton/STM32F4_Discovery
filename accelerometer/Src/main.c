@@ -41,7 +41,8 @@
 #include "stm32f4xx_hal.h"
 
 /* USER CODE BEGIN Includes */
-
+#include "stm32f4_discovery.h"
+#include "stdio.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -55,7 +56,8 @@ UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-
+static uint8_t echo_char;
+static uint32_t timer_ms;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -69,9 +71,42 @@ static void MX_TIM6_Init(void);
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
 
+/* We need to implement own __FILE struct */
+/* FILE struct is used from __FILE */
+struct __FILE {
+    int dummy;
+};
+
+/* You need this if you want use printf */
+/* Struct FILE is implemented in stdio.h */
+FILE __stdout;
 /* USER CODE END PFP */
 
+
 /* USER CODE BEGIN 0 */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
+	BSP_LED_Toggle(LED3);
+	HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_1);
+	timer_ms = 1;
+	return;
+}
+
+int __io_putchar(uint8_t ch) {
+	/* Do your stuff here */
+	/* Send your custom byte */
+	HAL_UART_StateTypeDef state;
+	state = HAL_UART_GetState(&huart2);
+
+	while (state == HAL_UART_STATE_BUSY_TX){
+		state = HAL_UART_GetState(&huart2);
+	}
+	HAL_UART_Transmit(&huart2, &ch, 1, 5000);
+
+	/* If everything is OK, you have to return character written */
+	return ch;
+	/* If character is not correct, you can return EOF (-1) to stop writing */
+	//return -1;
+}
 
 /* USER CODE END 0 */
 
@@ -106,13 +141,40 @@ int main(void)
   MX_TIM6_Init();
 
   /* USER CODE BEGIN 2 */
+  BSP_ACCELERO_Init();
+  HAL_UART_Receive_IT(&huart2, &echo_char, 1);
+  BSP_LED_Init(LED3);
+  BSP_LED_Init(LED4);
+  BSP_LED_Init(LED5);
+  BSP_LED_Init(LED6);
 
+  htim6.Init.Prescaler =  (uint32_t) (SystemCoreClock / 100000) - 1; // increase divider so we have more room in Period
+  htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim6.Init.Period = 25000; // 1 Second rising edge to rising edge
+  //htim6.Init.Period = 2500; // 100mS rising edge to rising edge
+  //htim6.Init.Period = 25; // 1mS rising edge to rising edge
+  htim6.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim6.Channel = HAL_TIM_ACTIVE_CHANNEL_CLEARED;
+  htim6.hdma[0] = NULL;
+  htim6.State = HAL_TIM_STATE_RESET;
+  HAL_TIM_Base_Init(&htim6);
+  HAL_TIM_Base_Start_IT(&htim6);
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_RESET);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+
+  timer_ms = 0;
   while (1)
   {
+	  int16_t XYZ[3];
+
+	  if (timer_ms){
+		  BSP_ACCELERO_GetXYZ(&XYZ[0]);
+		  timer_ms = 0;
+		  printf("ACC: 0x%x  0x%x  0x%x\r\n", XYZ[0], XYZ[1], XYZ[2]);
+	  }
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
@@ -255,7 +317,7 @@ static void MX_USART2_UART_Init(void)
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;
-  huart2.Init.Mode = UART_MODE_TX_RX;
+  huart2.Init.Mode = UART_MODE_TX;
   huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
   huart2.Init.OverSampling = UART_OVERSAMPLING_16;
   if (HAL_UART_Init(&huart2) != HAL_OK)
@@ -302,6 +364,9 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(OTG_FS_PowerSwitchOn_GPIO_Port, OTG_FS_PowerSwitchOn_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOD, LD4_Pin|LD3_Pin|LD5_Pin|LD6_Pin 
                           |Audio_RST_Pin, GPIO_PIN_RESET);
 
@@ -332,6 +397,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PA1 */
+  GPIO_InitStruct.Pin = GPIO_PIN_1;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pin : I2S3_WS_Pin */
   GPIO_InitStruct.Pin = I2S3_WS_Pin;

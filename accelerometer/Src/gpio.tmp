@@ -27,6 +27,8 @@ static void MX_GPIO_Init(void)
 #n#t/*Configure GPIO pin Output Level */
 #tHAL_GPIO_WritePin(OTG_FS_PowerSwitchOn_GPIO_Port, OTG_FS_PowerSwitchOn_Pin, GPIO_PIN_SET);
 #n#t/*Configure GPIO pin Output Level */
+#tHAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_RESET);
+#n#t/*Configure GPIO pin Output Level */
 #tHAL_GPIO_WritePin(GPIOD, LD4_Pin|LD3_Pin|LD5_Pin|LD6_Pin #n#t#t#t#t#t#t#t#t#t#t#t#t#t|Audio_RST_Pin, GPIO_PIN_RESET);
 #n#t/*Configure GPIO pin : CS_I2C_SPI_Pin */
 #tGPIO_InitStruct.Pin = CS_I2C_SPI_Pin;
@@ -52,6 +54,12 @@ static void MX_GPIO_Init(void)
 #tGPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
 #tGPIO_InitStruct.Pull = GPIO_NOPULL;
 #tHAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
+#n#t/*Configure GPIO pin : PA1 */
+#tGPIO_InitStruct.Pin = GPIO_PIN_1;
+#tGPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+#tGPIO_InitStruct.Pull = GPIO_NOPULL;
+#tGPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+#tHAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 #n#t/*Configure GPIO pin : I2S3_WS_Pin */
 #tGPIO_InitStruct.Pin = I2S3_WS_Pin;
 #tGPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
