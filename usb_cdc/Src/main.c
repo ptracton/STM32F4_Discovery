@@ -52,7 +52,7 @@
 #include "usb_device.h"
 
 /* USER CODE BEGIN Includes */
-
+#include "usbd_cdc_if.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -81,7 +81,8 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
+	uint8_t send_char = 'A';
+	uint8_t get_char;
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -116,6 +117,13 @@ int main(void)
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
+
+//	  CDC_Transmit_FS(&get_char, 1);
+//	  send_char ++;
+//	  if (send_char > 'Z'){
+//		  send_char = 'A';
+//	  }
+//	  HAL_Delay(10);
 
   }
   /* USER CODE END 3 */
