@@ -125,8 +125,6 @@ static void MX_GPIO_Init(void)
 #tGPIO_InitStruct.Mode = GPIO_MODE_EVT_RISING;
 #tGPIO_InitStruct.Pull = GPIO_NOPULL;
 #tHAL_GPIO_Init(MEMS_INT2_GPIO_Port, &GPIO_InitStruct);
-#n#t/* EXTI interrupt init*/
-#tHAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
-#tHAL_NVIC_EnableIRQ(EXTI0_IRQn);#n#n
+#n
 }
 #n

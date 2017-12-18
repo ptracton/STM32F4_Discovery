@@ -48,18 +48,13 @@
 ADC_HandleTypeDef hadc1;
 DMA_HandleTypeDef hdma_adc1;
 
-TIM_HandleTypeDef htim6;
-
-UART_HandleTypeDef huart2;
-
-DMA_HandleTypeDef hdma_memtomem_dma2_stream1;
-
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-#define MAX_DSP_BUFFER_SIZE 1024
+#define MAX_DSP_BUFFER_SIZE 8
 static int16_t ADCSamples[MAX_DSP_BUFFER_SIZE];
 static int16_t DSPSamples[MAX_DSP_BUFFER_SIZE];
 static uint8_t memcopy_complete;
+static uint8_t adc_complete;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -67,8 +62,6 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_ADC1_Init(void);
-static void MX_TIM6_Init(void);
-static void MX_USART2_UART_Init(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
@@ -80,6 +73,12 @@ void XferCpltCallback(DMA_HandleTypeDef * hdma){
 	memcopy_complete = 1;
 	return;
 }
+
+void ADCDMA_XferCpltCallback(DMA_HandleTypeDef * hdma){
+	adc_complete = 1;
+	return;
+}
+
 /* USER CODE END 0 */
 
 int main(void)
@@ -103,15 +102,13 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-
+  //  hadc1.DMA_Handle = &hdma_adc1;
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_ADC1_Init();
-  MX_TIM6_Init();
-  MX_USART2_UART_Init();
 
   /* USER CODE BEGIN 2 */
 
@@ -119,27 +116,44 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  status = HAL_DMA_RegisterCallback(&hdma_memtomem_dma2_stream1, HAL_DMA_XFER_CPLT_CB_ID, XferCpltCallback);
+  /* status = HAL_DMA_RegisterCallback(&hdma_memtomem_dma2_stream1, HAL_DMA_XFER_CPLT_CB_ID, XferCpltCallback); */
+  /* if (HAL_OK != status){ */
+  /* 	  Error_Handler(); */
+  /* } */
+  /* status = HAL_DMA_RegisterCallback(&hdma_adc1, HAL_DMA_XFER_CPLT_CB_ID, ADCDMA_XferCpltCallback); */
+  /* if (HAL_OK != status){ */
+  /* 	  Error_Handler(); */
+  /* } */
+  /* memcopy_complete = 0; */
+  /* adc_complete = 0; */
+
+  status = HAL_ADC_Start_DMA(&hadc1, &ADCSamples[0], MAX_DSP_BUFFER_SIZE);
   if (HAL_OK != status){
-	  Error_Handler();
+  	  Error_Handler();
   }
-  memcopy_complete = 0;
   while (1)
   {
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-	  for (i=0; i<MAX_DSP_BUFFER_SIZE-1; i++){
-		  DSPSamples[i] = 0;
-		  ADCSamples[i] = i;
-	  }
-	  status = HAL_DMA_Start_IT(&hdma_memtomem_dma2_stream1, &ADCSamples[0], &DSPSamples[0], MAX_DSP_BUFFER_SIZE);
-	  if (HAL_OK != status){
-		  Error_Handler();
-	  }
-	  __HAL_DMA_ENABLE(&hdma_memtomem_dma2_stream1);
-	  while (!memcopy_complete);
-	  memcopy_complete = 0;
+//	  for (i=0; i<MAX_DSP_BUFFER_SIZE-1; i++){
+//		  DSPSamples[i] = 0;
+//		  ADCSamples[i] = i;
+//	  }
+
+	  // Copy the ADC Samples over to the DSP buffer
+	  /* if (adc_complete){ */
+	  /* 	  adc_complete = 0; */
+	  /* 	  memcopy_complete = 0; */
+	  /* 	  status = HAL_DMA_Start_IT(&hdma_memtomem_dma2_stream1, &ADCSamples[0], &DSPSamples[0], MAX_DSP_BUFFER_SIZE); */
+	  /* 	  if (HAL_OK != status){ */
+	  /* 		  Error_Handler(); */
+	  /* 	  } */
+	  /* } */
+	  /* if (memcopy_complete){ */
+	  /* 	  // DO DSP WORK! */
+	  /* 	  __NOP(); */
+	  /* } */
   }
   /* USER CODE END 3 */
 
@@ -161,12 +175,11 @@ void SystemClock_Config(void)
 
     /**Initializes the CPU, AHB and APB busses clocks 
     */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = 16;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-  RCC_OscInitStruct.PLL.PLLM = 8;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+  RCC_OscInitStruct.PLL.PLLM = 4;
   RCC_OscInitStruct.PLL.PLLN = 168;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 7;
@@ -206,18 +219,17 @@ static void MX_ADC1_Init(void)
 {
 
   ADC_ChannelConfTypeDef sConfig;
-  ADC_InjectionConfTypeDef sConfigInjected;
 
     /**Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion) 
     */
   hadc1.Instance = ADC1;
   hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
   hadc1.Init.Resolution = ADC_RESOLUTION_12B;
-  hadc1.Init.ScanConvMode = DISABLE;
-  hadc1.Init.ContinuousConvMode = DISABLE;
+  hadc1.Init.ScanConvMode = ENABLE;
+  hadc1.Init.ContinuousConvMode = ENABLE;
   hadc1.Init.DiscontinuousConvMode = DISABLE;
-  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
-  hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_RISING;
+  hadc1.Init.ExternalTrigConv = ADC_EXTERNALTRIGCONV_T1_CC1;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
   hadc1.Init.NbrOfConversion = 1;
   hadc1.Init.DMAContinuousRequests = ENABLE;
@@ -237,103 +249,20 @@ static void MX_ADC1_Init(void)
     _Error_Handler(__FILE__, __LINE__);
   }
 
-    /**Configures for the selected ADC injected channel its corresponding rank in the sequencer and its sample time 
-    */
-  sConfigInjected.InjectedChannel = ADC_CHANNEL_1;
-  sConfigInjected.InjectedRank = 1;
-  sConfigInjected.InjectedNbrOfConversion = 1;
-  sConfigInjected.InjectedSamplingTime = ADC_SAMPLETIME_3CYCLES;
-  sConfigInjected.ExternalTrigInjecConvEdge = ADC_EXTERNALTRIGINJECCONVEDGE_NONE;
-  sConfigInjected.ExternalTrigInjecConv = ADC_INJECTED_SOFTWARE_START;
-  sConfigInjected.AutoInjectedConv = DISABLE;
-  sConfigInjected.InjectedDiscontinuousConvMode = DISABLE;
-  sConfigInjected.InjectedOffset = 0;
-  if (HAL_ADCEx_InjectedConfigChannel(&hadc1, &sConfigInjected) != HAL_OK)
-  {
-    _Error_Handler(__FILE__, __LINE__);
-  }
-
-}
-
-/* TIM6 init function */
-static void MX_TIM6_Init(void)
-{
-
-  TIM_MasterConfigTypeDef sMasterConfig;
-
-  htim6.Instance = TIM6;
-  htim6.Init.Prescaler = 0;
-  htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim6.Init.Period = 0;
-  if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
-  {
-    _Error_Handler(__FILE__, __LINE__);
-  }
-
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim6, &sMasterConfig) != HAL_OK)
-  {
-    _Error_Handler(__FILE__, __LINE__);
-  }
-
-}
-
-/* USART2 init function */
-static void MX_USART2_UART_Init(void)
-{
-
-  huart2.Instance = USART2;
-  huart2.Init.BaudRate = 115200;
-  huart2.Init.WordLength = UART_WORDLENGTH_8B;
-  huart2.Init.StopBits = UART_STOPBITS_1;
-  huart2.Init.Parity = UART_PARITY_NONE;
-  huart2.Init.Mode = UART_MODE_TX_RX;
-  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
-  if (HAL_UART_Init(&huart2) != HAL_OK)
-  {
-    _Error_Handler(__FILE__, __LINE__);
-  }
-
 }
 
 /** 
   * Enable DMA controller clock
-  * Configure DMA for memory to memory transfers
-  *   hdma_memtomem_dma2_stream1
   */
 static void MX_DMA_Init(void) 
 {
   /* DMA controller clock enable */
   __HAL_RCC_DMA2_CLK_ENABLE();
 
-  /* Configure DMA request hdma_memtomem_dma2_stream1 on DMA2_Stream1 */
-  hdma_memtomem_dma2_stream1.Instance = DMA2_Stream1;
-  hdma_memtomem_dma2_stream1.Init.Channel = DMA_CHANNEL_0;
-  hdma_memtomem_dma2_stream1.Init.Direction = DMA_MEMORY_TO_MEMORY;
-  hdma_memtomem_dma2_stream1.Init.PeriphInc = DMA_PINC_ENABLE;
-  hdma_memtomem_dma2_stream1.Init.MemInc = DMA_MINC_ENABLE;
-  hdma_memtomem_dma2_stream1.Init.PeriphDataAlignment = DMA_PDATAALIGN_HALFWORD;
-  hdma_memtomem_dma2_stream1.Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;
-  hdma_memtomem_dma2_stream1.Init.Mode = DMA_NORMAL;
-  hdma_memtomem_dma2_stream1.Init.Priority = DMA_PRIORITY_LOW;
-  hdma_memtomem_dma2_stream1.Init.FIFOMode = DMA_FIFOMODE_ENABLE;
-  hdma_memtomem_dma2_stream1.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_FULL;
-  hdma_memtomem_dma2_stream1.Init.MemBurst = DMA_MBURST_SINGLE;
-  hdma_memtomem_dma2_stream1.Init.PeriphBurst = DMA_PBURST_SINGLE;
-  if (HAL_DMA_Init(&hdma_memtomem_dma2_stream1) != HAL_OK)
-  {
-    _Error_Handler(__FILE__, __LINE__);
-  }
-
   /* DMA interrupt init */
   /* DMA2_Stream0_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
-  /* DMA2_Stream1_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA2_Stream1_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(DMA2_Stream1_IRQn);
 
 }
 
@@ -490,10 +419,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_EVT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(MEMS_INT2_GPIO_Port, &GPIO_InitStruct);
-
-  /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(EXTI0_IRQn);
 
 }
 
